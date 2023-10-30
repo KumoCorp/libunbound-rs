@@ -1,0 +1,13 @@
+[workspace]
+members = [
+  "libunbound",
+  "libunbound-sys",
+]
+resolver = "2"
+
+[workspace.dependencies]
+openssl = { version="0.10.57" }
+openssl-sys = { version="0.9" }
+tokio = "1.32"
+tempfile = "3.8"
+
