@@ -1,6 +1,6 @@
 use libunbound::*;
-use trust_dns_proto::rr::record_type::RecordType;
-use trust_dns_proto::rr::DNSClass;
+use hickory_proto::rr::record_type::RecordType;
+use hickory_proto::rr::DNSClass;
 
 #[tokio::main]
 async fn main() {
