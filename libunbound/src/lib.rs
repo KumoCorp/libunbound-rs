@@ -1,3 +1,8 @@
+use hickory_proto::error::ProtoResult;
+use hickory_proto::op::response_code::ResponseCode;
+use hickory_proto::rr::record_type::RecordType;
+use hickory_proto::rr::{DNSClass, RData};
+use hickory_proto::serialize::binary::{BinDecoder, Restrict};
 use libunbound_sys::*;
 use std::ffi::{c_int, CStr, CString};
 use std::io::Write;
@@ -5,11 +10,6 @@ use std::net::IpAddr;
 use std::sync::{Arc, Condvar, Mutex};
 use tokio::sync::oneshot::error::RecvError;
 use tokio::sync::oneshot::{channel, Sender};
-use trust_dns_proto::error::ProtoResult;
-use trust_dns_proto::op::response_code::ResponseCode;
-use trust_dns_proto::rr::record_type::RecordType;
-use trust_dns_proto::rr::{DNSClass, RData};
-use trust_dns_proto::serialize::binary::{BinDecoder, Restrict};
 
 /// These are the root trust anchors at the time of writing.
 /// See <https://www.nlnetlabs.nl/documentation/unbound/howto-anchor/>
@@ -713,8 +713,7 @@ impl Answer {
 
     /// the class asked for
     pub fn qclass(&self) -> DNSClass {
-        DNSClass::from_u16(self.answer().qclass as u16)
-            .expect("original rrclass was DNSClass, so this should be too")
+        (self.answer().qclass as u16).into()
     }
 
     /// canonical name for the result (the final cname).
