@@ -1,6 +1,6 @@
-use libunbound::*;
 use hickory_proto::rr::record_type::RecordType;
 use hickory_proto::rr::DNSClass;
+use libunbound::*;
 
 fn main() {
     let ctx = Context::new().expect("Context to be created");

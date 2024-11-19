@@ -6,7 +6,7 @@ use hickory_proto::serialize::binary::{BinDecoder, Restrict};
 use libunbound_sys::*;
 use std::ffi::{c_int, CStr, CString};
 use std::io::Write;
-use std::net::IpAddr;
+use std::net::SocketAddr;
 use std::sync::{Arc, Condvar, Mutex};
 use tokio::sync::oneshot::error::RecvError;
 use tokio::sync::oneshot::{channel, Sender};
@@ -194,12 +194,14 @@ impl Context {
     /// are used as backup servers.
     /// To read the list of nameservers from /etc/resolv.conf (from DHCP or so),
     /// use the call ub_ctx_resolvconf.
-    /// At this time it is only possible to set configuration before the\n\tfirst resolve is done.
+    /// At this time it is only possible to set configuration before the
+    /// first resolve is done.
     /// If the addr is None, forwarding is disabled.
-    pub fn set_forward(&self, addr: Option<IpAddr>) -> Result<(), Error> {
+    pub fn set_forward(&self, addr: Option<SocketAddr>) -> Result<(), Error> {
         let err = match addr {
             Some(addr) => {
-                let addr = CString::new(addr.to_string()).map_err(|_| Error::InvalidName)?;
+                let addr = socket_addr_to_ub_addr_string(addr);
+                let addr = CString::new(addr).map_err(|_| Error::InvalidName)?;
                 unsafe { ub_ctx_set_fwd(self.ctx, addr.as_ptr()) }
             }
             None => unsafe { ub_ctx_set_fwd(self.ctx, std::ptr::null()) },
@@ -236,13 +238,19 @@ impl Context {
     /// @param isprime: set to true to set stub-prime to yes for the stub.
     /// For local authoritative servers, people usually set it to false,
     /// For root hints it should be set to true.
-    pub fn set_stub(&self, zone: &str, addr: Option<IpAddr>, is_prime: bool) -> Result<(), Error> {
+    pub fn set_stub(
+        &self,
+        zone: &str,
+        addr: Option<SocketAddr>,
+        is_prime: bool,
+    ) -> Result<(), Error> {
         let zone = CString::new(zone).map_err(|_| Error::InvalidName)?;
         let is_prime = if is_prime { 1 } else { 0 };
 
         let err = match addr {
             Some(addr) => {
-                let addr = CString::new(addr.to_string()).map_err(|_| Error::InvalidName)?;
+                let addr = socket_addr_to_ub_addr_string(addr);
+                let addr = CString::new(addr).map_err(|_| Error::InvalidName)?;
                 unsafe { ub_ctx_set_stub(self.ctx, zone.as_ptr(), addr.as_ptr(), is_prime) }
             }
             None => unsafe { ub_ctx_set_stub(self.ctx, zone.as_ptr(), std::ptr::null(), is_prime) },
@@ -863,6 +871,12 @@ impl<'a> std::iter::Iterator for AnswerDataIter<'a> {
             Restrict::new(raw_data.len() as u16),
         ))
     }
+}
+
+fn socket_addr_to_ub_addr_string(addr: SocketAddr) -> String {
+    let ip = addr.ip().to_string();
+    let port = addr.port();
+    format!("{ip}@{port}")
 }
 
 #[derive(Debug, Clone, Copy)]
